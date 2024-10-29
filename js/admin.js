@@ -1,12 +1,12 @@
-$(document).ready(function(){
-    $('.nav-link').on('click', function(e){
-        e.preventDefault()
-        $('.nav-link').removeClass('link-active')
-        $(this).addClass('link-active')
+$(document).ready(function() {
+    $('.nav-link').on('click', function(e) {
+        e.preventDefault();
+        $('.nav-link').removeClass('link-active');
+        $(this).addClass('link-active');
         
-        let url = $(this).attr('href')
-        window.history.pushState({path: url}, '', url)
-    })
+        let url = $(this).attr('href');
+        window.history.pushState({ path: url }, '', url);
+    });
 
     $('#dashboard-link').on('click', function(e){
         e.preventDefault()
@@ -18,12 +18,20 @@ $(document).ready(function(){
         viewProducts()
     })
 
+    $('#account-link').on('click', function(e){
+        e.preventDefault()
+        viewAccounts()
+    })
+
     let url = window.location.href;
     if (url.endsWith('dashboard')){
         $('#dashboard-link').trigger('click')
     }else if (url.endsWith('products')){
         $('#products-link').trigger('click')
-    }else{
+    }else if (url.endsWith('account')) {
+        $('#account-link').trigger('click')
+    }
+    else{
         $('#dashboard-link').trigger('click')
     }
 
@@ -60,7 +68,7 @@ $(document).ready(function(){
                 beginAtZero: true,
                 max: 10000,
                 ticks: {
-                    stepSize: 2000
+                    stepSize: 2000  // Set step size to 2000
                 }
             }
             }
@@ -82,6 +90,7 @@ $(document).ready(function(){
                     ordering: false,
                 });
 
+                // Bind custom input to DataTable search
                 $('#custom-search').on('keyup', function() {
                     table.search(this.value).draw()
                 });
@@ -108,7 +117,7 @@ $(document).ready(function(){
             dataType: 'html',
             success: function(view){
                 $('.modal-container').html(view)
-                $('#modal-add-product').modal('show')
+                $('#staticBackdrop').modal('show')
 
                 fetchCategories()
 
@@ -121,16 +130,14 @@ $(document).ready(function(){
     }
 
     function saveProduct(){
-        let form = new FormData($('#form-add-product')[0])
         $.ajax({
             type: 'POST',
-            url: '../products/add-product.php',
-            data: form,
-            dataType: 'json',
-            processData: false,
-            contentType: false,
+            url: '../products/add-product.php',  // Make sure this points to your PHP handler
+            data: $('form').serialize(),         // Serialize the form data
+            dataType: 'json',                    // Expect a JSON response
             success: function(response) {
                 if (response.status === 'error') {
+                    // Display validation errors for each field
                     if (response.codeErr) {
                         $('#code').addClass('is-invalid');
                         $('#code').next('.invalid-feedback').text(response.codeErr).show();
@@ -155,15 +162,11 @@ $(document).ready(function(){
                     }else{
                         $('#price').removeClass('is-invalid');
                     }
-                    if (response.imageErr) {
-                        $('#product_image').addClass('is-invalid');
-                        $('#product_image').next('.invalid-feedback').text(response.imageErr).show();
-                    }else{
-                        $('#product_image').removeClass('is-invalid');
-                    }
                 } else if (response.status === 'success') {
-                    $('#modal-add-product').modal('hide');
-                    $('#form-add-product')[0].reset();
+                    // Hide the modal and reset the form on success
+                    $('#staticBackdrop').modal('hide');
+                    $('form')[0].reset();  // Reset the form
+                    // Optionally, redirect to the product listing page or display a success message
                     viewProducts()
                 }
             }
@@ -192,4 +195,101 @@ $(document).ready(function(){
             }
         });
     }
+
+     function viewAccounts() {
+        $.ajax({
+            type: 'GET',
+            url: '../account/view-account.php',
+            dataType: 'html',
+            success: function(response) {
+                $('.content-page').html(response);
+                
+                $('#add-account').on('click', function(e) {
+                    e.preventDefault();
+                    addAccount();
+                });
+            }
+        });
+    }
+
+    function addAccount() {
+        $.ajax({
+            type: 'GET',
+            url: '../account/add-account.html',
+            dataType: 'html',
+            success: function(view) {
+                $('.modal-container').html(view);
+                $('#staticBackdrop').modal('show');
+
+                
+                $('#form-add-account').on('submit', function(e) {
+                    e.preventDefault();
+                    saveAccount(); 
+                });
+            }
+        });
+    }
+
+    function saveAccount() {
+        $.ajax({
+            type: 'POST',
+            url: '../account/add-account.php', 
+            data: $('form').serialize(), 
+            dataType: 'json', 
+            success: function(response) {
+                console.log(response); 
+
+              
+                if (response.status === 'error') {
+                    if (response.first_nameErr) {
+                        $('#first-name').addClass('is-invalid');
+                        $('#first-name').next('.invalid-feedback').text(response.first_nameErr).show();
+                    } else {
+                        $('#first-name').removeClass('is-invalid');
+                        $('#first-name').next('.invalid-feedback').hide();
+                    }
+
+                    if (response.last_nameErr) {
+                        $('#last-name').addClass('is-invalid');
+                        $('#last-name').next('.invalid-feedback').text(response.last_nameErr).show();
+                    } else {
+                        $('#last-name').removeClass('is-invalid');
+                        $('#last-name').next('.invalid-feedback').hide();
+                    }
+
+                    if (response.usernameErr) {
+                        $('#username').addClass('is-invalid');
+                        $('#username').next('.invalid-feedback').text(response.usernameErr).show();
+                    } else {
+                        $('#username').removeClass('is-invalid');
+                        $('#username').next('.invalid-feedback').hide();
+                    }
+
+                    if (response.passwordErr) {
+                        $('#password').addClass('is-invalid');
+                        $('#password').next('.invalid-feedback').text(response.passwordErr).show();
+                    } else {
+                        $('#password').removeClass('is-invalid');
+                        $('#password').next('.invalid-feedback').hide();
+                    }
+
+                    if (response.roleErr) {
+                        $('#role').addClass('is-invalid');
+                        $('#role').next('.invalid-feedback').text(response.roleErr).show();
+                    } else {
+                        $('#role').removeClass('is-invalid');
+                        $('#role').next('.invalid-feedback').hide();
+                    }
+                } else if (response.status === 'success') {
+                    
+                    $('#staticBackdrop').modal('hide');
+                    $('#form-add-account')[0].reset(); 
+                    viewAccounts(); 
+                }
+            }
+        });
+    }
+
+   
+    viewAccounts();
 });
